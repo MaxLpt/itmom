@@ -8,6 +8,9 @@ public class PlayerAnimator : MonoBehaviour
     public Animator anim;
     public Rigidbody rbody;
 
+    public float linearSpeed = 106.0f;
+    public float angularSpeed = 41.0f;
+
     private float inputH;
     private float inputV;
 
@@ -16,12 +19,13 @@ public class PlayerAnimator : MonoBehaviour
     {
         anim = GetComponent<Animator>();
         rbody = GetComponent<Rigidbody>();
-
     }
 
     // Update is called once per frame
     void Update()
     {
+        bool hit = anim.GetCurrentAnimatorStateInfo (0).IsName ("DAMAGED01");
+
         if (Input.GetKeyDown("1"))
         {
             anim.Play("WALK00_F", -1, 0f);
@@ -38,22 +42,51 @@ public class PlayerAnimator : MonoBehaviour
         {
             anim.Play("WALK00_R", -1, 0f);
         }
-        if (Input.GetMouseButtonDown(0))
+        if (!hit && Input.GetMouseButtonDown(0))
         {
             anim.Play("DAMAGED01", -1, 0f);
+            rbody.velocity = new Vector3(0f, 0f, 0f);
+            hit = true;
         }
+
+        if (!hit)
         {
+            if(Input.GetKey(KeyCode.Space))
+            {
+                anim.SetBool("jump", true);
+            }
+            else
+            {
+                anim.SetBool("jump", false);
+            }
+
+            bool run = Input.GetKey (KeyCode.LeftShift);
 
             inputH = Input.GetAxis("Horizontal");
             inputV = Input.GetAxis("Vertical");
 
             anim.SetFloat("inputH", inputH);
             anim.SetFloat("inputV", inputV);
+            anim.SetBool ("run", run);
 
-            float moveX = inputH * 20f * Time.deltaTime;
-            float moveZ = inputV * 50f * Time.deltaTime;
+            float angularMove = inputH * angularSpeed * Time.deltaTime;
+            float linearMove = inputV * linearSpeed * Time.deltaTime;
 
-            rbody.velocity = new Vector3(moveX, 0f, moveZ);
+            if(run)
+            {
+                // Run!
+                linearMove *= 3f;
+            }
+
+            if(linearMove <= 0f)
+            {
+                angularMove *= 2.2f;
+            }
+
+            Vector3 moveDirection = new Vector3(0f, 0f, linearMove);
+            moveDirection = transform.TransformDirection (moveDirection);
+            rbody.velocity = moveDirection;
+            rbody.angularVelocity = new Vector3(0f, angularMove, 0f);
         }
     }
 }
